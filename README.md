@@ -1,1 +1,57 @@
-# eeshas
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import java.net.InetSocketAddress;
+import java.io.OutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.net.URLDecoder;
+class WalidHandler implements HttpHandler {
+  public void handle(HttpExchange exchange)throws IOException {
+    String name = "";
+    int grade = 0;
+    String status = "";
+    String query = exchange.getRequestURI().getQuery();
+    String file = "index.html";
+    String response = new String(Files.readAllBytes(Paths.get(file)));
+    
+    if (query != null) {
+      String [] split = query.split("&");
+      name = URLDecoder.decode(split[0].split("=")[1],"UTF-8");
+      grade = Integer.parseInt(split[1].split("=")[1]);
+      
+      if (grade >= 70) {
+        status = "excellent";
+      }
+        else if (grade >= 50) {
+          status = "pass";
+        }
+        else {
+          status = "failed";
+        }
+      response += "\n<p> hello " + name + " your grade is " + grade + " and your status is " + status
+      +"</p>";
+      }
+    
+    exchange.getResponseHeaders().add("Content-Type", "text/html");
+    exchange.sendResponseHeaders(200, response.getBytes().length);
+    OutputStream os = exchange.getResponseBody();
+    os.write(response.getBytes());
+    os.close();
+
+  }
+}
+
+public class Main {
+  public static void main(String [] args) {
+    InetSocketAddress address = new InetSocketAddress(8080);
+    try {
+      HttpServer server = HttpServer.create(address, 0);
+      server.createContext("/", new WalidHandler());
+      server.start();
+    } catch (IOException e) {
+      System.out.println("server could not start");
+    }
+  }
+}
